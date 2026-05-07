@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Løpetrener — Norwegian Model</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
   :root{
     --bg:#0f0f0f;--surface:#1e1e1e;--surface2:#2a2a2a;
@@ -19,9 +20,11 @@
   }
   *{box-sizing:border-box;margin:0;padding:0;}
   body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-weight:300;min-height:100vh;font-size:16px;}
-  header{border-bottom:1px solid var(--border);padding:22px 28px;display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;}
-  header h1{font-family:'DM Mono',monospace;font-size:15px;font-weight:500;color:var(--accent);letter-spacing:0.08em;text-transform:uppercase;}
-  header span{font-size:13px;color:var(--text3);font-family:'DM Mono',monospace;}
+  header{border-bottom:1px solid var(--border);padding:22px 28px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+  header h1{font-family:'DM Mono',monospace;font-size:15px;font-weight:500;color:var(--accent);letter-spacing:0.08em;text-transform:uppercase;flex:1;}
+  .sync-status{font-family:'DM Mono',monospace;font-size:11px;padding:5px 12px;border-radius:20px;border:1px solid var(--border);color:var(--text3);cursor:pointer;white-space:nowrap;}
+  .sync-status.connected{color:var(--green);border-color:var(--green-border);background:var(--green-bg);}
+  .sync-status.syncing{color:var(--yellow);border-color:var(--yellow-border);background:var(--yellow-bg);}
   .notice{margin:20px 28px 0;padding:12px 16px;background:var(--blue-bg);border:1px solid var(--blue-border);border-radius:8px;font-size:14px;color:var(--blue);font-family:'DM Mono',monospace;line-height:1.5;}
   .tabs{display:flex;padding:0 28px;border-bottom:1px solid var(--border);overflow-x:auto;}
   .tab{padding:16px 18px;font-size:12px;font-family:'DM Mono',monospace;letter-spacing:0.05em;text-transform:uppercase;color:var(--text3);cursor:pointer;border:none;background:none;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;transition:color 0.15s,border-color 0.15s;}
@@ -130,6 +133,8 @@
   .bmi-bar{height:10px;border-radius:5px;background:linear-gradient(to right,var(--blue) 0%,var(--green) 35%,var(--yellow) 65%,var(--red) 100%);position:relative;margin:8px 0 4px;}
   .bmi-marker{position:absolute;top:-3px;width:16px;height:16px;border-radius:50%;background:var(--text);border:2px solid var(--bg);transform:translateX(-50%);transition:left 0.4s ease;}
   .empty-state{padding:50px 0;text-align:center;color:var(--text3);font-family:'DM Mono',monospace;font-size:13px;letter-spacing:0.06em;}
+  .drive-banner{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:20px;text-align:center;}
+  .drive-banner p{font-size:14px;color:var(--text2);margin-bottom:16px;line-height:1.6;}
   #tab-activity,#tab-history,#tab-week,#tab-trend,#tab-settings{display:none;}
   #result{display:none;}
   @media(max-width:600px){
@@ -144,7 +149,7 @@
 <body>
 <header>
   <h1>Løpetrener</h1>
-  <span>Norwegian Model · Ti / To / Søn · Maks 177 bpm</span>
+  <button class="sync-status" id="sync-btn" onclick="handleSyncClick()">⬤ Koble til Drive</button>
 </header>
 <div class="notice">ℹ&nbsp; Maks sone 3 (terskel 142–159 bpm) frem til august — sone 4–5 låst. Kardiologkontroll august 2025.</div>
 <div class="tabs">
@@ -157,30 +162,13 @@
 </div>
 <div class="content">
 
-  <!-- MORGENFORM -->
   <div id="tab-log">
     <p class="section-label">Morgendata fra Garmin</p>
     <div class="input-grid">
-      <div class="input-group">
-        <label>HRV (ms)</label>
-        <input type="number" id="hrv" placeholder="38" min="10" max="150">
-        <div class="hint">Nattlig HRV-snitt</div>
-      </div>
-      <div class="input-group">
-        <label>Hvilepuls (bpm)</label>
-        <input type="number" id="rhr" placeholder="58" min="30" max="100">
-        <div class="hint">Laveste nattlig puls</div>
-      </div>
-      <div class="input-group">
-        <label>Pusterfrekvens</label>
-        <input type="number" id="br" placeholder="14" min="6" max="30" step="0.1">
-        <div class="hint">Nattlig snitt (ånd/min)</div>
-      </div>
-      <div class="input-group">
-        <label>Body Battery</label>
-        <input type="number" id="bb" placeholder="72" min="0" max="100">
-        <div class="hint">Ved oppvåkning</div>
-      </div>
+      <div class="input-group"><label>HRV (ms)</label><input type="number" id="hrv" placeholder="38" min="10" max="150"><div class="hint">Nattlig HRV-snitt</div></div>
+      <div class="input-group"><label>Hvilepuls (bpm)</label><input type="number" id="rhr" placeholder="58" min="30" max="100"><div class="hint">Laveste nattlig puls</div></div>
+      <div class="input-group"><label>Pusterfrekvens</label><input type="number" id="br" placeholder="14" min="6" max="30" step="0.1"><div class="hint">Nattlig snitt (ånd/min)</div></div>
+      <div class="input-group"><label>Body Battery</label><input type="number" id="bb" placeholder="72" min="0" max="100"><div class="hint">Ved oppvåkning</div></div>
     </div>
     <div class="btn-row">
       <button class="primary" onclick="calculate()">Beregn dagen</button>
@@ -189,10 +177,7 @@
     <div id="result">
       <div id="status-card" class="status-card green">
         <div class="status-dot"></div>
-        <div class="status-text">
-          <div class="main" id="status-label">Grønn dag</div>
-          <div class="sub" id="status-sub"></div>
-        </div>
+        <div class="status-text"><div class="main" id="status-label">Grønn dag</div><div class="sub" id="status-sub"></div></div>
         <div class="status-score" id="score-display">—</div>
       </div>
       <div class="metrics-row">
@@ -200,22 +185,18 @@
         <div class="metric"><div class="val" id="m-zone">—</div><div class="lbl">Løp maks sone</div></div>
         <div class="metric"><div class="val" id="m-duration">—</div><div class="lbl">Løp varighet</div></div>
       </div>
-
       <p class="section-label">Løpeøkt</p>
       <div id="phases" style="margin-bottom:26px;"></div>
-
       <div id="strength-section" style="display:none;">
         <p class="section-label">Styrkeøkt — <span id="strength-day-label"></span></p>
         <div id="strength-content"></div>
       </div>
-
       <div class="btn-row">
         <button class="secondary" id="save-btn" onclick="saveSession()">Lagre morgenform</button>
       </div>
     </div>
   </div>
 
-  <!-- LOGG ØKT -->
   <div id="tab-activity">
     <p class="section-label">Last opp økt fra Garmin Connect</p>
     <div class="upload-zone" onclick="document.getElementById('file-input').click()">
@@ -244,247 +225,260 @@
         <div class="zone-bar-track"><div class="zone-bar-fill" id="bar-s45" style="background:var(--red);width:0%"></div></div>
       </div>
       <div class="activity-feedback" id="a-feedback"></div>
-      <div class="btn-row" style="margin-top:18px;">
-        <button class="secondary" id="save-activity-btn" onclick="saveActivity()">Lagre økt</button>
-      </div>
+      <div class="btn-row" style="margin-top:18px;"><button class="secondary" id="save-activity-btn" onclick="saveActivity()">Lagre økt</button></div>
     </div>
   </div>
 
-  <!-- HISTORIKK -->
   <div id="tab-history">
     <p class="section-label">Loggede data</p>
     <div id="history-list"><div class="empty-state">Ingen data logget ennå</div></div>
   </div>
 
-  <!-- FREMGANG -->
   <div id="tab-trend">
     <div id="motivate-box" class="motivate" style="display:none;"></div>
-
-    <div class="trend-wrap">
-      <div class="trend-title">
-        <span>HRV siste 14 dager</span>
-        <span class="trend-stat" id="hrv-trend-stat"></span>
-      </div>
-      <canvas class="trend-chart" id="chart-hrv"></canvas>
-    </div>
-    <div class="trend-wrap">
-      <div class="trend-title">
-        <span>Hvilepuls siste 14 dager</span>
-        <span class="trend-stat" id="rhr-trend-stat"></span>
-      </div>
-      <canvas class="trend-chart" id="chart-rhr"></canvas>
-    </div>
-    <div class="trend-wrap">
-      <div class="trend-title">
-        <span>Form-score siste 14 dager</span>
-        <span class="trend-stat" id="score-trend-stat"></span>
-      </div>
-      <canvas class="trend-chart" id="chart-score"></canvas>
-    </div>
-    <div class="trend-wrap">
-      <div class="trend-title">
-        <span>Body Battery siste 14 dager</span>
-        <span class="trend-stat" id="bb-trend-stat"></span>
-      </div>
-      <canvas class="trend-chart" id="chart-bb"></canvas>
-    </div>
+    <div class="trend-wrap"><div class="trend-title"><span>HRV siste 14 dager</span><span class="trend-stat" id="hrv-trend-stat"></span></div><canvas class="trend-chart" id="chart-hrv"></canvas></div>
+    <div class="trend-wrap"><div class="trend-title"><span>Hvilepuls siste 14 dager</span><span class="trend-stat" id="rhr-trend-stat"></span></div><canvas class="trend-chart" id="chart-rhr"></canvas></div>
+    <div class="trend-wrap"><div class="trend-title"><span>Form-score siste 14 dager</span><span class="trend-stat" id="score-trend-stat"></span></div><canvas class="trend-chart" id="chart-score"></canvas></div>
+    <div class="trend-wrap"><div class="trend-title"><span>Body Battery siste 14 dager</span><span class="trend-stat" id="bb-trend-stat"></span></div><canvas class="trend-chart" id="chart-bb"></canvas></div>
     <div id="trend-empty" class="empty-state" style="display:none;">Logg minst 3 morgener for å se trender</div>
   </div>
 
-  <!-- UKEPLAN -->
   <div id="tab-week">
     <p class="section-label">Denne uken</p>
     <div class="week-grid" id="week-grid"></div>
     <p class="section-label">Pulssoner — maks puls 177 bpm</p>
-    <div class="zone-block">
-      <div class="zone-header"><span class="zone-title" style="color:var(--green)">Sone 1 — rolig</span><span class="zone-bpm" style="color:var(--green)">106–124 bpm</span><span class="zone-tag" style="color:var(--green);border-color:var(--green-border);background:var(--green-bg)">Alltid OK</span></div>
-      <div class="zone-body">Kan snakke i hele setninger. Hoveddelen av all trening. Bygger aerob base uten belastning på hjertet.</div>
-    </div>
-    <div class="zone-block">
-      <div class="zone-header"><span class="zone-title" style="color:var(--yellow)">Sone 2 — moderat</span><span class="zone-bpm" style="color:var(--yellow)">124–142 bpm</span><span class="zone-tag" style="color:var(--yellow);border-color:var(--yellow-border);background:var(--yellow-bg)">Unngå</span></div>
-      <div class="zone-body">Norwegian Model unngår denne sonen — for hard til å være rolig, for lett til å gi terskeleffekt.</div>
-    </div>
-    <div class="zone-block">
-      <div class="zone-header"><span class="zone-title" style="color:var(--blue)">Sone 3 — terskel</span><span class="zone-bpm" style="color:var(--blue)">142–159 bpm</span><span class="zone-tag" style="color:var(--blue);border-color:var(--blue-border);background:var(--blue-bg)">Score 80+ kun</span></div>
-      <div class="zone-body">Ditt tak frem til august. Kun på grønne dager med score 80+. Korte drag 60–90 sek, god pause mellom.</div>
-    </div>
-    <div class="zone-block" style="opacity:0.45">
-      <div class="zone-header"><span class="zone-title" style="color:var(--text3)">Sone 4–5 — høy intensitet</span><span class="zone-bpm" style="color:var(--text3)">over 159 bpm</span><span class="zone-tag" style="color:var(--text3);border-color:var(--border);background:var(--surface2)">Låst til august</span></div>
-      <div class="zone-body">Åpnes etter kardiologkontroll august 2025.</div>
-    </div>
-    <p class="section-label" style="margin-top:8px;">Styrkeprogram — Push/Pull/Bein splitt</p>
+    <div class="zone-block"><div class="zone-header"><span class="zone-title" style="color:var(--green)">Sone 1 — rolig</span><span class="zone-bpm" style="color:var(--green)">106–124 bpm</span><span class="zone-tag" style="color:var(--green);border-color:var(--green-border);background:var(--green-bg)">Alltid OK</span></div><div class="zone-body">Kan snakke i hele setninger. Hoveddelen av all trening.</div></div>
+    <div class="zone-block"><div class="zone-header"><span class="zone-title" style="color:var(--yellow)">Sone 2 — moderat</span><span class="zone-bpm" style="color:var(--yellow)">124–142 bpm</span><span class="zone-tag" style="color:var(--yellow);border-color:var(--yellow-border);background:var(--yellow-bg)">Unngå</span></div><div class="zone-body">Norwegian Model unngår denne sonen.</div></div>
+    <div class="zone-block"><div class="zone-header"><span class="zone-title" style="color:var(--blue)">Sone 3 — terskel</span><span class="zone-bpm" style="color:var(--blue)">142–159 bpm</span><span class="zone-tag" style="color:var(--blue);border-color:var(--blue-border);background:var(--blue-bg)">Score 80+ kun</span></div><div class="zone-body">Ditt tak frem til august. Korte drag 60–90 sek.</div></div>
+    <div class="zone-block" style="opacity:0.45"><div class="zone-header"><span class="zone-title" style="color:var(--text3)">Sone 4–5</span><span class="zone-bpm" style="color:var(--text3)">over 159 bpm</span><span class="zone-tag" style="color:var(--text3);border-color:var(--border);background:var(--surface2)">Låst til august</span></div><div class="zone-body">Åpnes etter kardiologkontroll august 2025.</div></div>
+    <p class="section-label" style="margin-top:8px;">Styrkeprogram — se alle dager</p>
     <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
       <button class="secondary" onclick="previewStrength('bein')" style="font-size:12px;padding:8px 16px;">Tirsdag — Bein</button>
       <button class="secondary" onclick="previewStrength('push')" style="font-size:12px;padding:8px 16px;">Torsdag — Push</button>
       <button class="secondary" onclick="previewStrength('pull')" style="font-size:12px;padding:8px 16px;">Søndag — Pull</button>
     </div>
     <div id="strength-preview" style="margin-bottom:16px;"></div>
-    <div class="zone-block">
-      <div class="zone-header"><span class="zone-title" style="color:var(--purple)">Tirsdag — Bein</span><span class="zone-tag" style="color:var(--purple);border-color:var(--purple-border);background:var(--purple-bg)">Etter løp</span></div>
-      <div class="zone-body">Knebøy, rumensk markløft, lunges, leg press, leggpress. Redusert volum på gule dager.</div>
-    </div>
-    <div class="zone-block">
-      <div class="zone-header"><span class="zone-title" style="color:var(--purple)">Torsdag — Push</span><span class="zone-tag" style="color:var(--purple);border-color:var(--purple-border);background:var(--purple-bg)">Etter løp</span></div>
-      <div class="zone-body">Benkpress, skulderpress, dips, triceps. Bryst og skulder i fokus.</div>
-    </div>
-    <div class="zone-block">
-      <div class="zone-header"><span class="zone-title" style="color:var(--purple)">Søndag — Pull</span><span class="zone-tag" style="color:var(--purple);border-color:var(--purple-border);background:var(--purple-bg)">Etter løp</span></div>
-      <div class="zone-body">Pull-ups/lat pulldown, roing, biceps, face pulls. Rygg og biceps i fokus.</div>
-    </div>
   </div>
 
-  <!-- INNSTILLINGER -->
   <div id="tab-settings">
+    <p class="section-label">Google Drive synk</p>
+    <div class="card">
+      <div class="settings-row">
+        <div class="settings-label">Status<small id="drive-status-text">Ikke koblet til</small></div>
+        <button class="secondary" id="drive-btn" onclick="handleSyncClick()" style="padding:8px 16px;font-size:12px;">Koble til</button>
+      </div>
+    </div>
     <p class="section-label">Kroppsmål</p>
     <div class="card">
-      <div class="settings-row">
-        <div class="settings-label">Høyde<small>cm</small></div>
-        <input class="settings-input" type="number" id="s-height" placeholder="180" min="140" max="220" oninput="updateBMI()">
-      </div>
-      <div class="settings-row">
-        <div class="settings-label">Vekt<small>kg</small></div>
-        <input class="settings-input" type="number" id="s-weight" placeholder="80" min="40" max="200" step="0.1" oninput="updateBMI()">
-      </div>
-      <div class="settings-row">
-        <div class="settings-label">BMI<small id="bmi-category">Legg inn høyde og vekt</small></div>
-        <span class="settings-input" id="bmi-val" style="display:inline-block;">—</span>
-      </div>
-      <div style="padding:0 0 16px;">
-        <div class="bmi-bar"><div class="bmi-marker" id="bmi-marker" style="left:0%;display:none;"></div></div>
-        <div style="display:flex;justify-content:space-between;font-family:'DM Mono',monospace;font-size:10px;color:var(--text3);"><span>Under</span><span>Normal</span><span>Over</span><span>Fedme</span></div>
-      </div>
+      <div class="settings-row"><div class="settings-label">Høyde<small>cm</small></div><input class="settings-input" type="number" id="s-height" placeholder="180" min="140" max="220" oninput="updateBMI()"></div>
+      <div class="settings-row"><div class="settings-label">Vekt<small>kg</small></div><input class="settings-input" type="number" id="s-weight" placeholder="80" min="40" max="200" step="0.1" oninput="updateBMI()"></div>
+      <div class="settings-row"><div class="settings-label">BMI<small id="bmi-category">Legg inn høyde og vekt</small></div><span class="settings-input" id="bmi-val" style="display:inline-block;">—</span></div>
+      <div style="padding:0 0 16px;"><div class="bmi-bar"><div class="bmi-marker" id="bmi-marker" style="left:0%;display:none;"></div></div><div style="display:flex;justify-content:space-between;font-family:'DM Mono',monospace;font-size:10px;color:var(--text3);"><span>Under</span><span>Normal</span><span>Over</span><span>Fedme</span></div></div>
     </div>
     <p class="section-label">Normal pusterfrekvens</p>
-    <div class="card">
-      <div class="settings-row">
-        <div class="settings-label">Din normale hvilepust<small>Åndedrag per minutt om natten</small></div>
-        <input class="settings-input" type="number" id="s-br-baseline" placeholder="13" min="6" max="25" step="0.1">
-      </div>
-    </div>
+    <div class="card"><div class="settings-row"><div class="settings-label">Din normale hvilepust<small>Åndedrag per minutt om natten</small></div><input class="settings-input" type="number" id="s-br-baseline" placeholder="13" min="6" max="25" step="0.1"></div></div>
     <div class="btn-row"><button class="primary" onclick="saveSettings()">Lagre innstillinger</button></div>
     <p class="section-label">Data</p>
-    <div class="card">
-      <div class="settings-row">
-        <div class="settings-label">Nullstill all historikk<small>Kan ikke angres</small></div>
-        <button class="secondary" onclick="clearAll()" style="padding:8px 16px;font-size:12px;">Slett alt</button>
-      </div>
-    </div>
+    <div class="card"><div class="settings-row"><div class="settings-label">Nullstill all historikk<small>Kan ikke angres</small></div><button class="secondary" onclick="clearAll()" style="padding:8px 16px;font-size:12px;">Slett alt</button></div></div>
   </div>
 
 </div>
 <script>
+// ---- CONFIG ----
+const CLIENT_ID='695088285598-jfqefp2gf1q6lkl54t9eq52hj6e2jdlu.apps.googleusercontent.com';
+const SCOPES='https://www.googleapis.com/auth/drive.appdata';
+const DRIVE_FILE='loepetrener_data.json';
+
+// ---- STRENGTH ----
+const STRENGTH={
+  bein:{label:'Bein',green:[
+    {name:'Knebøy',sets:'4 × 10–12',note:'Moderat vekt, full dybde'},
+    {name:'Rumensk markløft',sets:'3 × 10–12',note:'Fokus på hamstrings og glutes'},
+    {name:'Ben press i maskin',sets:'3 × 12–15',note:'Kontrollert ned'},
+    {name:'Walking lunges',sets:'3 × 12 per bein',note:'Kroppsvekt eller lette håndvekter'},
+    {name:'Tåhev stående',sets:'4 × 15',note:'Full bevegelse, Smith maskin eller fri'}
+  ],yellow:[
+    {name:'Knebøy',sets:'3 × 8–10',note:'Lett vekt'},
+    {name:'Ben press i maskin',sets:'3 × 10–12',note:'Redusert vekt'},
+    {name:'Tåhev',sets:'3 × 12',note:''}
+  ],red:[{name:'Hvil',sets:'—',note:'Beina trenger restitusjon.'}]},
+  push:{label:'Push — bryst og skulder',green:[
+    {name:'Benkpress',sets:'4 × 10–12',note:'Kontrollert ned'},
+    {name:'Skulderpress',sets:'3 × 10–12',note:'Dumbbell eller stang'},
+    {name:'Incline dumbbell press',sets:'3 × 12',note:'30–45 graders vinkel'},
+    {name:'Sidehev (lateral raises)',sets:'3 × 15',note:'Lette vekter, god form'},
+    {name:'Triceps pushdown',sets:'3 × 15',note:'Kabel eller strikk'},
+    {name:'Dips',sets:'3 × maks',note:'Assistert maskin om tilgjengelig'}
+  ],yellow:[
+    {name:'Benkpress',sets:'3 × 8',note:'Redusert vekt'},
+    {name:'Skulderpress',sets:'3 × 10',note:''},
+    {name:'Triceps pushdown',sets:'3 × 12',note:''}
+  ],red:[{name:'Hvil',sets:'—',note:'Ta en ekstra hviledag.'}]},
+  pull:{label:'Pull — rygg og biceps',green:[
+    {name:'Markløft',sets:'4 × 6–8',note:'Start økten med dette mens du er frisk'},
+    {name:'Lat pulldown eller pull-ups',sets:'4 × 10–12',note:'Bredt grep, trekk til brystet'},
+    {name:'Seated row',sets:'3 × 10–12',note:'Rett rygg, klem i bladene'},
+    {name:'Trekk til ansikt (face pulls)',sets:'3 × 15',note:'Kabel, skulderrotasjon og helse'},
+    {name:'Dumbbell row',sets:'3 × 12 per side',note:'Støtt deg på benk'},
+    {name:'Bicep curl',sets:'3 × 12',note:'Alternerende eller hammer curl'},
+    {name:'Ekstern rotasjon kabel',sets:'3 × 15',note:'Bakre skulder og rotatormansjett'}
+  ],yellow:[
+    {name:'Markløft',sets:'2 × 5',note:'Lett vekt — teknikk i fokus'},
+    {name:'Lat pulldown',sets:'3 × 10',note:'Redusert vekt'},
+    {name:'Seated row',sets:'3 × 10',note:''},
+    {name:'Bicep curl',sets:'3 × 12',note:'Lett vekt'}
+  ],red:[{name:'Hvil',sets:'—',note:'La kroppen hente seg inn igjen.'}]}
+};
+
+// ---- GOOGLE DRIVE ----
+let tokenClient=null;
+let accessToken=null;
+let driveFileId=null;
+let isSyncing=false;
+
+function initGoogle(){
+  if(typeof google==='undefined')return;
+  tokenClient=google.accounts.oauth2.initTokenClient({
+    client_id:CLIENT_ID,
+    scope:SCOPES,
+    callback:(resp)=>{
+      if(resp.error)return;
+      accessToken=resp.access_token;
+      localStorage.setItem('gd_token',accessToken);
+      updateSyncUI(true);
+      syncFromDrive();
+    }
+  });
+  const saved=localStorage.getItem('gd_token');
+  if(saved){accessToken=saved;updateSyncUI(true);syncFromDrive();}
+}
+
+function handleSyncClick(){
+  if(accessToken){syncToDrive();return;}
+  if(tokenClient)tokenClient.requestAccessToken();
+  else alert('Google-innlogging ikke klar ennå. Prøv igjen om et øyeblikk.');
+}
+
+function updateSyncUI(connected){
+  const btn=document.getElementById('sync-btn');
+  const dBtn=document.getElementById('drive-btn');
+  const dTxt=document.getElementById('drive-status-text');
+  if(connected){
+    btn.textContent='⬤ Drive tilkoblet';btn.className='sync-status connected';
+    if(dBtn)dBtn.textContent='Synk nå';
+    if(dTxt)dTxt.textContent='Koblet til Google Drive';
+  }else{
+    btn.textContent='⬤ Koble til Drive';btn.className='sync-status';
+    if(dBtn)dBtn.textContent='Koble til';
+    if(dTxt)dTxt.textContent='Ikke koblet til';
+  }
+}
+
+async function syncToDrive(){
+  if(!accessToken||isSyncing)return;
+  isSyncing=true;
+  const btn=document.getElementById('sync-btn');
+  btn.textContent='↻ Synkroniserer...';btn.className='sync-status syncing';
+  try{
+    const data=getData();
+    const content=JSON.stringify(data);
+    if(driveFileId){
+      await fetch(`https://www.googleapis.com/upload/drive/v3/files/${driveFileId}?uploadType=media`,{
+        method:'PATCH',headers:{'Authorization':'Bearer '+accessToken,'Content-Type':'application/json'},body:content
+      });
+    }else{
+      const meta=await fetch('https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name%3D%22'+DRIVE_FILE+'%22',{headers:{'Authorization':'Bearer '+accessToken}});
+      const mj=await meta.json();
+      if(mj.files&&mj.files.length>0){
+        driveFileId=mj.files[0].id;
+        await fetch(`https://www.googleapis.com/upload/drive/v3/files/${driveFileId}?uploadType=media`,{
+          method:'PATCH',headers:{'Authorization':'Bearer '+accessToken,'Content-Type':'application/json'},body:content
+        });
+      }else{
+        const form=new FormData();
+        form.append('metadata',new Blob([JSON.stringify({name:DRIVE_FILE,parents:['appDataFolder']})],{type:'application/json'}));
+        form.append('file',new Blob([content],{type:'application/json'}));
+        const res=await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',{
+          method:'POST',headers:{'Authorization':'Bearer '+accessToken},body:form
+        });
+        const rj=await res.json();driveFileId=rj.id;
+      }
+    }
+    btn.textContent='⬤ Drive tilkoblet';btn.className='sync-status connected';
+  }catch(e){
+    btn.textContent='⬤ Synk feilet';btn.className='sync-status';
+    console.error(e);
+  }
+  isSyncing=false;
+}
+
+async function syncFromDrive(){
+  if(!accessToken)return;
+  try{
+    const meta=await fetch('https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name%3D%22'+DRIVE_FILE+'%22',{headers:{'Authorization':'Bearer '+accessToken}});
+    const mj=await meta.json();
+    if(mj.files&&mj.files.length>0){
+      driveFileId=mj.files[0].id;
+      const res=await fetch(`https://www.googleapis.com/drive/v3/files/${driveFileId}?alt=media`,{headers:{'Authorization':'Bearer '+accessToken}});
+      const d=await res.json();
+      if(d&&d.history){
+        const local=getData();
+        // Merge: ta det som har flest entries
+        if(!local.history||d.history.length>=local.history.length){
+          localStorage.setItem('nm_v4',JSON.stringify(d));
+        }
+      }
+    }
+  }catch(e){console.error('Drive sync feil:',e);}
+}
+
+// ---- DATA ----
 const SK='nm_v4';
 const ZONES={s1_lo:106,s1_hi:124,s2_hi:142,s3_hi:159};
 const DAYS=['Man','Tir','Ons','Tor','Fre','Lør','Søn'];
 const RUN_DAYS=[1,3,6];
 
-// Strength programs — grønn/gul/rød variants
-const STRENGTH={
-  bein:{
-    label:'Bein',
-    green:[
-      {name:'Knebøy',sets:'4 × 10–12',note:'Moderat vekt, full dybde'},
-      {name:'Rumensk markløft',sets:'3 × 10–12',note:'Fokus på hamstrings og glutes'},
-      {name:'Leg press',sets:'3 × 12–15',note:'Bredt grep, kontrollert ned'},
-      {name:'Walking lunges',sets:'3 × 12 per bein',note:'Kroppsvekt eller lette håndvekter'},
-      {name:'Leggpress (stående)',sets:'4 × 15',note:'Full bevegelse'},
-    ],
-    yellow:[
-      {name:'Knebøy',sets:'3 × 8–10',note:'Lett vekt — beina er slitne fra løp'},
-      {name:'Leg press',sets:'3 × 10–12',note:'Redusert vekt'},
-      {name:'Leggpress',sets:'3 × 12',note:''},
-    ],
-    red:[{name:'Hvil',sets:'—',note:'Beina trenger restitusjon. Ikke tren i dag.'}]
-  },
-  push:{
-    label:'Push — bryst og skulder',
-    green:[
-      {name:'Benkpress',sets:'4 × 10–12',note:'Moderat vekt, kontrollert ned'},
-      {name:'Skulderpress (stående eller sittende)',sets:'3 × 10–12',note:'Dumbbell eller stang'},
-      {name:'Incline dumbbell press',sets:'3 × 12',note:'30–45 graders vinkel'},
-      {name:'Lateral raises',sets:'3 × 15',note:'Lette vekter, god form'},
-      {name:'Triceps pushdown',sets:'3 × 15',note:'Kabel eller strikk'},
-      {name:'Dips',sets:'3 × maks',note:'Kroppsvekt, gå til failure'},
-    ],
-    yellow:[
-      {name:'Benkpress',sets:'3 × 8',note:'Redusert vekt'},
-      {name:'Skulderpress',sets:'3 × 10',note:''},
-      {name:'Triceps pushdown',sets:'3 × 12',note:''},
-    ],
-    red:[{name:'Hvil',sets:'—',note:'Ta en ekstra hviledag. Kommer sterkere tilbake.'}]
-  },
-  pull:{
-    label:'Pull — rygg og biceps',
-    green:[
-      {name:'Markløft',sets:'4 × 6–8',note:'Tung og kontrollert — start økten med dette mens du er frisk'},
-      {name:'Lat pulldown eller pull-ups',sets:'4 × 10–12',note:'Bredt grep, trekk til brystet'},
-      {name:'Seated row',sets:'3 × 10–12',note:'Rett rygg, klem i bladene'},
-      {name:'Face pulls',sets:'3 × 15',note:'Kabel, skulderrotasjon og helse'},
-      {name:'Dumbbell row',sets:'3 × 12 per side',note:'Støtt deg på benk'},
-      {name:'Bicep curl',sets:'3 × 12',note:'Alternerende eller hammer curl'},
-      {name:'Ekstern rotasjon kabel',sets:'3 × 15',note:'Bakre skulder og rotatormansjett'},
-    ],
-    yellow:[
-      {name:'Markløft',sets:'2 × 5',note:'Lett vekt — teknikk i fokus, ikke tyngde'},
-      {name:'Lat pulldown',sets:'3 × 10',note:'Redusert vekt'},
-      {name:'Seated row',sets:'3 × 10',note:''},
-      {name:'Bicep curl',sets:'3 × 12',note:'Lett vekt'},
-    ],
-    red:[{name:'Hvil',sets:'—',note:'La kroppen hente seg inn igjen.'}]
-  }
-};
-
-function getStrengthDay(){
-  const today=new Date().getDay();
-  if(today===2)return'bein';   // tirsdag
-  if(today===4)return'push';   // torsdag
-  if(today===0)return'pull';   // søndag
-  return null;
-}
-
-function renderStrength(score){
-  const day=getStrengthDay();
-  if(!day){document.getElementById('strength-section').style.display='none';return;}
-  const prog=STRENGTH[day];
-  const variant=score>=65?'green':score>=45?'yellow':'red';
-  const variantLabel=score>=65?'Fullt program':score>=45?'Redusert volum':'Hvil — ikke tren';
-  const variantColor=score>=65?'var(--green)':score>=45?'var(--yellow)':'var(--red)';
-  document.getElementById('strength-day-label').textContent=prog.label;
-  document.getElementById('strength-section').style.display='block';
-  const exercises=prog[variant];
-  document.getElementById('strength-content').innerHTML=`
-    <div class="strength-block">
-      <div class="strength-header">
-        <span class="strength-title">${prog.label}</span>
-        <span class="strength-tag" style="color:${variantColor};border-color:${variantColor}40;background:${variantColor}15">${variantLabel}</span>
-      </div>
-      ${exercises.map(e=>`
-        <div class="exercise-row">
-          <div>
-            <div class="exercise-name">${e.name}</div>
-            ${e.note?`<div class="exercise-note">${e.note}</div>`:''}
-          </div>
-          <div class="exercise-sets">${e.sets}</div>
-        </div>
-      `).join('')}
-    </div>
-    <p style="font-size:12px;color:var(--text3);margin-top:8px;">Løp alltid først — styrke etterpå. Ta 10 min pause mellom.</p>
-  `;
-}
-
 function getData(){try{return JSON.parse(localStorage.getItem(SK)||'{}');}catch(e){return{};}}
 function setData(d){try{localStorage.setItem(SK,JSON.stringify(d));}catch(e){alert('Kunne ikke lagre.');}}
 function migrateOldData(){try{const old=localStorage.getItem('nm_v3');if(old&&!getData().history){const d=getData();d.history=JSON.parse(old);setData(d);}}catch(e){}}
 function getHistory(){return getData().history||[];}
-function setHistory(h){const d=getData();d.history=h;setData(d);}
+function setHistory(h){const d=getData();d.history=h;setData(d);setTimeout(syncToDrive,500);}
 function getSettings(){const s=getData().settings||{};return{height:s.height||0,weight:s.weight||0,brBaseline:s.brBaseline||0};}
-function saveSettingsData(s){const d=getData();d.settings=s;setData(d);}
+function saveSettingsData(s){const d=getData();d.settings=s;setData(d);setTimeout(syncToDrive,500);}
 
 function getBaseline(){
   const h=getHistory().filter(e=>e.hrv);if(h.length<3)return null;
   const r=h.slice(-7);
   return{hrv:r.reduce((a,b)=>a+b.hrv,0)/r.length,rhr:r.reduce((a,b)=>a+b.rhr,0)/r.length,
     br:r.filter(e=>e.br).length>=3?r.filter(e=>e.br).reduce((a,b)=>a+(b.br||0),0)/r.filter(e=>e.br).length:0};
+}
+
+function getStrengthDay(){const t=new Date().getDay();if(t===2)return'bein';if(t===4)return'push';if(t===0)return'pull';return null;}
+
+function renderStrength(score){
+  const day=getStrengthDay();
+  if(!day){document.getElementById('strength-section').style.display='none';return;}
+  const prog=STRENGTH[day];
+  const variant=score>=65?'green':score>=45?'yellow':'red';
+  const vLabel=score>=65?'Fullt program':score>=45?'Redusert volum':'Hvil — ikke tren';
+  const vColor=score>=65?'var(--green)':score>=45?'var(--yellow)':'var(--red)';
+  document.getElementById('strength-day-label').textContent=prog.label;
+  document.getElementById('strength-section').style.display='block';
+  document.getElementById('strength-content').innerHTML=`
+    <div class="strength-block">
+      <div class="strength-header"><span class="strength-title">${prog.label}</span><span class="strength-tag" style="color:${vColor};border-color:${vColor}40;background:${vColor}15">${vLabel}</span></div>
+      ${STRENGTH[day][variant].map(e=>`<div class="exercise-row"><div><div class="exercise-name">${e.name}</div>${e.note?`<div class="exercise-note">${e.note}</div>`:''}</div><div class="exercise-sets">${e.sets}</div></div>`).join('')}
+    </div>
+    <p style="font-size:12px;color:var(--text3);margin-top:8px;">Løp alltid først — styrke etterpå. Ta 10 min pause mellom.</p>`;
+}
+
+function previewStrength(day){
+  const prog=STRENGTH[day];
+  document.getElementById('strength-preview').innerHTML=`
+    <div class="strength-block">
+      <div class="strength-header"><span class="strength-title">${prog.label}</span><span class="strength-tag">Fullt program</span></div>
+      ${prog.green.map(e=>`<div class="exercise-row"><div><div class="exercise-name">${e.name}</div>${e.note?`<div class="exercise-note">${e.note}</div>`:''}</div><div class="exercise-sets">${e.sets}</div></div>`).join('')}
+    </div>`;
 }
 
 function calculate(){
@@ -499,28 +493,20 @@ function calculate(){
   const brW=(!isNaN(br)&&br>0)?0.10:0;
   const score=Math.round(hs*0.38+rs*0.27+bb*(0.25+(!brW?0.10:0))+brs*brW);
   let brNote='';const s=getSettings();const brRef=bl&&bl.br>0?bl.br:s.brBaseline;
-  if(!isNaN(br)&&br>0&&brRef>0){if(br>brRef*1.15)brNote=' Forhøyet pusterfrekvens — kroppen kan være stresset.';else if(br<brRef*0.90)brNote=' Pusterfrekvens lavere enn normalt — god restitusjon.';}
+  if(!isNaN(br)&&br>0&&brRef>0){if(br>brRef*1.15)brNote=' Forhøyet pusterfrekvens.';else if(br<brRef*0.90)brNote=' God restitusjon.';}
   let cls,label,sub,zone,duration,phases;
-  if(score>=80){
-    cls='green';label='Grønn dag — full innsats';sub='Løp + fullt styrkeprogram'+brNote;zone='Sone 1–3';duration='35–45 min';
-    phases=[{t:'Oppvarming',d:'8 min rolig gange + gradvis jogg. Hold under 124 bpm.',c:'var(--green)'},{t:'Hoveddel',d:'3 × 2 min jogg i sone 1 (under 124 bpm), deretter 2 × 60–90 sek kontrollert drag mot terskel (142–159 bpm). God pause mellom.',c:'var(--blue)'},{t:'Nedjogging',d:'8–10 min rolig tilbake under 124 bpm.',c:'var(--green)'},{t:'Nedkjøling',d:'5 min gange. Deretter over på styrke etter 10 min pause.',c:'var(--text3)'}];
-  }else if(score>=65){
-    cls='green';label='Grønn dag';sub='Løp + fullt styrkeprogram'+brNote;zone='Sone 1';duration='25–35 min';
-    phases=[{t:'Oppvarming',d:'5 min rolig gange.',c:'var(--green)'},{t:'Hoveddel',d:'4 × 2 min lett jogg, 2 min gange mellom. Hold under 124 bpm — ingen drag i dag.',c:'var(--green)'},{t:'Nedkjøling',d:'5 min rolig gange. Deretter over på styrke etter 10 min pause.',c:'var(--text3)'}];
-  }else if(score>=45){
-    cls='yellow';label='Gul dag — reduser belastning';sub='Lett løp + redusert styrke'+brNote;zone='Sone 1';duration='15–20 min';
-    phases=[{t:'Rolig gange/lett jogg',d:'15–20 min. Hold under 106 bpm. Hopp over løp om kroppen sier nei.',c:'var(--yellow)'},{t:'Styrke etterpå',d:'Redusert volum — se styrkeøkten under.',c:'var(--text3)'}];
-  }else{
-    cls='red';label='Rød dag — hvil';sub='Ingen løp, ingen styrke i dag'+brNote;zone='Hvile';duration='—';
-    phases=[{t:'Ikke tren i dag',d:'HRV og/eller Body Battery for lavt. En god hviledag er bedre enn en dårlig treningsdag.',c:'var(--red)'},{t:'Aktiv hvile',d:'15 min rolig gange er nok. La kroppen jobbe i fred.',c:'var(--text3)'}];
-  }
+  if(score>=80){cls='green';label='Grønn dag — full innsats';sub='Løp + fullt styrkeprogram'+brNote;zone='Sone 1–3';duration='35–45 min';
+    phases=[{t:'Oppvarming',d:'8 min rolig gange + gradvis jogg. Hold under 124 bpm.',c:'var(--green)'},{t:'Hoveddel',d:'3 × 2 min jogg i sone 1, deretter 2 × 60–90 sek kontrollert drag mot terskel (142–159 bpm).',c:'var(--blue)'},{t:'Nedjogging',d:'8–10 min rolig tilbake under 124 bpm.',c:'var(--green)'},{t:'Nedkjøling',d:'5 min gange. Deretter styrke etter 10 min pause.',c:'var(--text3)'}];
+  }else if(score>=65){cls='green';label='Grønn dag';sub='Løp + fullt styrkeprogram'+brNote;zone='Sone 1';duration='25–35 min';
+    phases=[{t:'Oppvarming',d:'5 min rolig gange.',c:'var(--green)'},{t:'Hoveddel',d:'4 × 2 min lett jogg, 2 min gange mellom. Hold under 124 bpm.',c:'var(--green)'},{t:'Nedkjøling',d:'5 min rolig gange. Deretter styrke etter 10 min pause.',c:'var(--text3)'}];
+  }else if(score>=45){cls='yellow';label='Gul dag — reduser belastning';sub='Lett løp + redusert styrke'+brNote;zone='Sone 1';duration='15–20 min';
+    phases=[{t:'Rolig gange/lett jogg',d:'15–20 min. Hold under 106 bpm.',c:'var(--yellow)'},{t:'Styrke etterpå',d:'Redusert volum — se styrkeøkten under.',c:'var(--text3)'}];
+  }else{cls='red';label='Rød dag — hvil';sub='Ingen løp, ingen styrke i dag'+brNote;zone='Hvile';duration='—';
+    phases=[{t:'Ikke tren i dag',d:'HRV og/eller Body Battery for lavt. En god hviledag er bedre enn en dårlig treningsdag.',c:'var(--red)'},{t:'Aktiv hvile',d:'15 min rolig gange er nok.',c:'var(--text3)'}];}
   document.getElementById('status-card').className='status-card '+cls;
-  document.getElementById('status-label').textContent=label;
-  document.getElementById('status-sub').textContent=sub;
-  document.getElementById('score-display').textContent=score;
-  document.getElementById('m-score').textContent=score+'/100';
-  document.getElementById('m-zone').textContent=zone;
-  document.getElementById('m-duration').textContent=duration;
+  document.getElementById('status-label').textContent=label;document.getElementById('status-sub').textContent=sub;
+  document.getElementById('score-display').textContent=score;document.getElementById('m-score').textContent=score+'/100';
+  document.getElementById('m-zone').textContent=zone;document.getElementById('m-duration').textContent=duration;
   document.getElementById('phases').innerHTML=phases.map(p=>`<div class="phase" style="border-left-color:${p.c}"><div class="phase-title" style="color:${p.c}">${p.t}</div><div class="phase-desc">${p.d}</div></div>`).join('');
   renderStrength(score);
   document.getElementById('result').style.display='block';
@@ -532,10 +518,7 @@ function saveSession(){
   const h=getHistory();h.push(window._session);setHistory(h);renderHistory();
   const btn=document.getElementById('save-btn');btn.textContent='Lagret ✓';setTimeout(()=>btn.textContent='Lagre morgenform',2000);
 }
-function clearForm(){
-  ['hrv','rhr','br','bb'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('result').style.display='none';window._session=null;
-}
+function clearForm(){['hrv','rhr','br','bb'].forEach(id=>document.getElementById(id).value='');document.getElementById('result').style.display='none';window._session=null;}
 
 function handleFile(e){const file=e.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=ev=>parseActivity(ev.target.result,file.name);reader.readAsText(file);}
 function haversine(a,b){const R=6371000,dLat=(b.lat-a.lat)*Math.PI/180,dLon=(b.lon-a.lon)*Math.PI/180;const x=Math.sin(dLat/2)**2+Math.cos(a.lat*Math.PI/180)*Math.cos(b.lat*Math.PI/180)*Math.sin(dLon/2)**2;return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));}
@@ -545,20 +528,22 @@ function parseActivity(text,filename){
   if(isGPX){const pts=doc.querySelectorAll('trkpt');pts.forEach(pt=>{const hr=pt.querySelector('hr,heartrate');const time=pt.querySelector('time');if(hr)hrValues.push(parseInt(hr.textContent));if(time)times.push(new Date(time.textContent));});const arr=Array.from(pts);for(let i=1;i<arr.length;i++){const a={lat:parseFloat(arr[i-1].getAttribute('lat')),lon:parseFloat(arr[i-1].getAttribute('lon'))};const b={lat:parseFloat(arr[i].getAttribute('lat')),lon:parseFloat(arr[i].getAttribute('lon'))};distances.push(haversine(a,b));}}
   else{const tps=doc.querySelectorAll('Trackpoint');let lastDist=0;tps.forEach(tp=>{const hr=tp.querySelector('Value');const time=tp.querySelector('Time');const dist=tp.querySelector('DistanceMeters');if(hr)hrValues.push(parseInt(hr.textContent));if(time)times.push(new Date(time.textContent));if(dist){const d=parseFloat(dist.textContent);distances.push(Math.max(0,d-lastDist));lastDist=d;}});}
   if(!hrValues.length){alert('Ingen pulsdata funnet. Prøv TCX-format.');return;}
-  const avgHR=Math.round(hrValues.reduce((a,b)=>a+b,0)/hrValues.length);
-  const maxHR=Math.max(...hrValues);const totalDist=distances.reduce((a,b)=>a+b,0);const distKm=(totalDist/1000).toFixed(2);
+  const avgHR=Math.round(hrValues.reduce((a,b)=>a+b,0)/hrValues.length);const maxHR=Math.max(...hrValues);
+  const totalDist=distances.reduce((a,b)=>a+b,0);const distKm=(totalDist/1000).toFixed(2);
   const durationMin=times.length>=2?Math.round((times[times.length-1]-times[0])/60000):0;
   const total=hrValues.length;
-  const s1=hrValues.filter(h=>h<ZONES.s1_hi).length;const s2=hrValues.filter(h=>h>=ZONES.s1_hi&&h<ZONES.s2_hi).length;const s3=hrValues.filter(h=>h>=ZONES.s2_hi&&h<ZONES.s3_hi).length;const s45=hrValues.filter(h=>h>=ZONES.s3_hi).length;
+  const s1=hrValues.filter(h=>h<ZONES.s1_hi).length;const s2=hrValues.filter(h=>h>=ZONES.s1_hi&&h<ZONES.s2_hi).length;
+  const s3=hrValues.filter(h=>h>=ZONES.s2_hi&&h<ZONES.s3_hi).length;const s45=hrValues.filter(h=>h>=ZONES.s3_hi).length;
   const pct=v=>Math.round(v/total*100);const s1min=Math.round(durationMin*(s1/total));const s3min=Math.round(durationMin*(s3/total));
   document.getElementById('a-filename').textContent=filename.replace(/\.(gpx|tcx)$/i,'');
-  document.getElementById('a-duration').textContent=durationMin?durationMin+' min':'—';document.getElementById('a-avghr').textContent=avgHR+' bpm';document.getElementById('a-maxhr').textContent=maxHR+' bpm';
-  document.getElementById('a-distance').textContent=totalDist>50?distKm+' km':'—';document.getElementById('a-s1').textContent=s1min+' min';document.getElementById('a-s3').textContent=s3min+' min';
+  document.getElementById('a-duration').textContent=durationMin?durationMin+' min':'—';document.getElementById('a-avghr').textContent=avgHR+' bpm';
+  document.getElementById('a-maxhr').textContent=maxHR+' bpm';document.getElementById('a-distance').textContent=totalDist>50?distKm+' km':'—';
+  document.getElementById('a-s1').textContent=s1min+' min';document.getElementById('a-s3').textContent=s3min+' min';
   ['s1','s2','s3','s45'].forEach(z=>{const val=z==='s1'?pct(s1):z==='s2'?pct(s2):z==='s3'?pct(s3):pct(s45);document.getElementById('bar-'+z).style.width=val+'%';document.getElementById('bar-'+z+'-pct').textContent=val+'%';});
   const s2pct=pct(s2),s1pct=pct(s1),s3pct=pct(s3),s45pct=pct(s45);
   let fbClass,fbText;
   if(s45pct>2){fbClass='over';fbText='Du var over terskel (>159 bpm) i '+s45pct+'% av økten. Maks er sone 3 frem til august.';}
-  else if(s2pct>30){fbClass='warn';fbText=s2pct+'% av økten i sone 2 (124–142 bpm). Prøv enten roligere eller kortere terskel-drag.';}
+  else if(s2pct>30){fbClass='warn';fbText=s2pct+'% av økten i sone 2 (124–142 bpm). Prøv roligere eller kortere terskel-drag.';}
   else{fbClass='ok';fbText='Bra kontroll! '+s1pct+'% i sone 1.'+(s3pct>0?' Terskel-drag: '+s3pct+'% ('+s3min+' min).':'');}
   const fb=document.getElementById('a-feedback');fb.className='activity-feedback '+fbClass;fb.textContent=fbText;
   document.getElementById('activity-result').style.display='block';
@@ -578,96 +563,60 @@ function renderHistory(){
   }).join('');
 }
 
-// TREND CHARTS
-function drawChart(canvasId, points, color, min, max){
+function drawChart(canvasId,points,color,min,max){
   const canvas=document.getElementById(canvasId);if(!canvas)return;
-  const ctx=canvas.getContext('2d');
-  const W=canvas.width=canvas.offsetWidth*window.devicePixelRatio||canvas.offsetWidth;
-  const H=canvas.height=120*window.devicePixelRatio||120;
-  canvas.style.width='100%';canvas.style.height='120px';
-  ctx.scale(window.devicePixelRatio||1,window.devicePixelRatio||1);
-  const w=canvas.offsetWidth,h=120;
-  ctx.clearRect(0,0,w,h);
+  const ctx=canvas.getContext('2d');const W=canvas.offsetWidth;const H=120;
+  canvas.width=W*window.devicePixelRatio;canvas.height=H*window.devicePixelRatio;
+  canvas.style.width=W+'px';canvas.style.height=H+'px';ctx.scale(window.devicePixelRatio,window.devicePixelRatio);
   if(points.length<2)return;
-  const pad=10;
-  const vmin=min!==undefined?min:Math.min(...points.map(p=>p.v))-5;
-  const vmax=max!==undefined?max:Math.max(...points.map(p=>p.v))+5;
-  const xScale=(w-pad*2)/(points.length-1);
-  const yScale=(h-pad*2)/(vmax-vmin);
-  const px=i=>pad+i*xScale;
-  const py=v=>h-pad-(v-vmin)*yScale;
-  // gradient fill
-  const grad=ctx.createLinearGradient(0,0,0,h);
-  grad.addColorStop(0,color+'55');grad.addColorStop(1,color+'00');
-  ctx.beginPath();ctx.moveTo(px(0),py(points[0].v));
-  for(let i=1;i<points.length;i++)ctx.lineTo(px(i),py(points[i].v));
-  ctx.lineTo(px(points.length-1),h);ctx.lineTo(px(0),h);ctx.closePath();
-  ctx.fillStyle=grad;ctx.fill();
-  // line
-  ctx.beginPath();ctx.moveTo(px(0),py(points[0].v));
-  for(let i=1;i<points.length;i++)ctx.lineTo(px(i),py(points[i].v));
+  const pad=12;const vmin=min!==undefined?min:Math.min(...points.map(p=>p.v))-3;const vmax=max!==undefined?max:Math.max(...points.map(p=>p.v))+3;
+  const xScale=(W-pad*2)/(points.length-1);const yScale=(H-pad*2)/(vmax-vmin);
+  const px=i=>pad+i*xScale;const py=v=>H-pad-(v-vmin)*yScale;
+  const grad=ctx.createLinearGradient(0,0,0,H);grad.addColorStop(0,color+'44');grad.addColorStop(1,color+'00');
+  ctx.beginPath();ctx.moveTo(px(0),py(points[0].v));for(let i=1;i<points.length;i++)ctx.lineTo(px(i),py(points[i].v));
+  ctx.lineTo(px(points.length-1),H);ctx.lineTo(px(0),H);ctx.closePath();ctx.fillStyle=grad;ctx.fill();
+  ctx.beginPath();ctx.moveTo(px(0),py(points[0].v));for(let i=1;i<points.length;i++)ctx.lineTo(px(i),py(points[i].v));
   ctx.strokeStyle=color;ctx.lineWidth=2;ctx.stroke();
-  // dots
   points.forEach((p,i)=>{ctx.beginPath();ctx.arc(px(i),py(p.v),3,0,Math.PI*2);ctx.fillStyle=color;ctx.fill();});
-  // labels
-  ctx.fillStyle='rgba(255,255,255,0.5)';ctx.font='10px DM Mono,monospace';ctx.textAlign='center';
+  ctx.fillStyle='rgba(255,255,255,0.6)';ctx.font='10px DM Mono,monospace';ctx.textAlign='center';
   points.forEach((p,i)=>{if(i===0||i===points.length-1||points.length<=7)ctx.fillText(p.v.toFixed(0),px(i),py(p.v)-8);});
 }
 
 function trendArrow(points){
   if(points.length<3)return'';
-  const first=points.slice(0,Math.floor(points.length/2)).reduce((a,b)=>a+b.v,0)/Math.floor(points.length/2);
-  const last=points.slice(Math.floor(points.length/2)).reduce((a,b)=>a+b.v,0)/points.slice(Math.floor(points.length/2)).length;
+  const mid=Math.floor(points.length/2);
+  const first=points.slice(0,mid).reduce((a,b)=>a+b.v,0)/mid;
+  const last=points.slice(mid).reduce((a,b)=>a+b.v,0)/points.slice(mid).length;
   const diff=last-first;
   if(Math.abs(diff)<0.5)return'→ stabil';
   return diff>0?'↑ +'+diff.toFixed(1):'↓ '+diff.toFixed(1);
 }
 
 function getMotivation(mornings){
-  if(!mornings.length)return null;
-  const hrvVals=mornings.filter(e=>e.hrv).map(e=>e.hrv);
-  if(hrvVals.length<3)return null;
-  const first3avg=hrvVals.slice(0,3).reduce((a,b)=>a+b,0)/3;
-  const lastAvg=hrvVals.slice(-3).reduce((a,b)=>a+b,0)/3;
-  const diff=lastAvg-first3avg;
-  const messages=[];
-  if(diff>3)messages.push(`HRV har steget ${diff.toFixed(1)} ms siden du startet — hjertet ditt responderer på treningen. 💪`);
-  if(diff>6)messages.push(`Det er en markant fremgang. Fra ${first3avg.toFixed(0)} til ${lastAvg.toFixed(0)} ms i snitt — det er ikke tilfeldig.`);
+  if(mornings.length<3)return null;
+  const hrvVals=mornings.filter(e=>e.hrv).map(e=>e.hrv);if(hrvVals.length<3)return null;
+  const first3=hrvVals.slice(0,3).reduce((a,b)=>a+b,0)/3;const last3=hrvVals.slice(-3).reduce((a,b)=>a+b,0)/3;
+  const diff=last3-first3;const msgs=[];
+  if(diff>3)msgs.push(`HRV har steget ${diff.toFixed(1)} ms siden du startet — hjertet responderer på treningen. 💪`);
+  if(diff>6)msgs.push(`Fra ${first3.toFixed(0)} til ${last3.toFixed(0)} ms i snitt. Det er ikke tilfeldig.`);
   const rhrVals=mornings.filter(e=>e.rhr).map(e=>e.rhr);
-  if(rhrVals.length>=4){const rhrFirst=rhrVals.slice(0,3).reduce((a,b)=>a+b,0)/3;const rhrLast=rhrVals.slice(-3).reduce((a,b)=>a+b,0)/3;if(rhrFirst-rhrLast>1.5)messages.push(`Hvilepulsen har gått ned ${(rhrFirst-rhrLast).toFixed(1)} slag — hjertet jobber mer effektivt.`);}
-  if(!messages.length&&mornings.length>=5)messages.push(`${mornings.length} morgener logget. Konsistens er selve fundamentet — du er på rett vei.`);
-  return messages.join(' ');
+  if(rhrVals.length>=4){const rf=rhrVals.slice(0,3).reduce((a,b)=>a+b,0)/3;const rl=rhrVals.slice(-3).reduce((a,b)=>a+b,0)/3;if(rf-rl>1.5)msgs.push(`Hvilepulsen ned ${(rf-rl).toFixed(1)} slag — hjertet jobber mer effektivt.`);}
+  if(!msgs.length&&mornings.length>=5)msgs.push(`${mornings.length} morgener logget. Konsistens er fundamentet — du er på rett vei.`);
+  return msgs.join(' ');
 }
 
 function renderTrend(){
-  const h=getHistory();
-  const mornings=h.filter(e=>e.type==='morning'&&e.hrv).slice(-14);
-  if(mornings.length<3){
-    document.getElementById('trend-empty').style.display='block';
-    ['chart-hrv','chart-rhr','chart-score','chart-bb'].forEach(id=>{const p=document.getElementById(id);if(p&&p.parentElement)p.parentElement.style.display='none';});
-    return;
-  }
+  const h=getHistory();const mornings=h.filter(e=>e.type==='morning'&&e.hrv).slice(-14);
+  if(mornings.length<3){document.getElementById('trend-empty').style.display='block';['chart-hrv','chart-rhr','chart-score','chart-bb'].forEach(id=>{const p=document.getElementById(id);if(p&&p.parentElement)p.parentElement.style.display='none';});return;}
   document.getElementById('trend-empty').style.display='none';
   ['chart-hrv','chart-rhr','chart-score','chart-bb'].forEach(id=>{const p=document.getElementById(id);if(p&&p.parentElement)p.parentElement.style.display='block';});
-
-  const motivate=getMotivation(mornings);
-  const mbox=document.getElementById('motivate-box');
+  const motivate=getMotivation(mornings);const mbox=document.getElementById('motivate-box');
   if(motivate){mbox.textContent=motivate;mbox.style.display='block';}else{mbox.style.display='none';}
-
-  const hrvPts=mornings.map(e=>({v:e.hrv}));
-  const rhrPts=mornings.filter(e=>e.rhr).map(e=>({v:e.rhr}));
-  const scorePts=mornings.filter(e=>e.score).map(e=>({v:e.score}));
-  const bbPts=mornings.filter(e=>e.bb).map(e=>({v:e.bb}));
-
-  setTimeout(()=>{
-    drawChart('chart-hrv',hrvPts,'#90e090');
-    drawChart('chart-rhr',rhrPts,'#f07070');
-    drawChart('chart-score',scorePts,'#ddc8a0',0,100);
-    drawChart('chart-bb',bbPts,'#80c0f0',0,100);
-  },50);
-
+  const hrvPts=mornings.map(e=>({v:e.hrv}));const rhrPts=mornings.filter(e=>e.rhr).map(e=>({v:e.rhr}));
+  const scorePts=mornings.filter(e=>e.score).map(e=>({v:e.score}));const bbPts=mornings.filter(e=>e.bb).map(e=>({v:e.bb}));
+  setTimeout(()=>{drawChart('chart-hrv',hrvPts,'#90e090');drawChart('chart-rhr',rhrPts,'#f07070');drawChart('chart-score',scorePts,'#ddc8a0',0,100);drawChart('chart-bb',bbPts,'#80c0f0',0,100);},50);
   document.getElementById('hrv-trend-stat').textContent=trendArrow(hrvPts);
-  document.getElementById('rhr-trend-stat').textContent=trendArrow(rhrPts.map(p=>({v:-p.v}))).replace(/[↑↓]/g,a=>a==='↑'?'↓':'↑').replace('-','');
+  document.getElementById('rhr-trend-stat').textContent=trendArrow(rhrPts);
   document.getElementById('score-trend-stat').textContent=trendArrow(scorePts);
   document.getElementById('bb-trend-stat').textContent=trendArrow(bbPts);
 }
@@ -692,8 +641,7 @@ function updateBMI(){
   const bmi=w/((h/100)**2);document.getElementById('bmi-val').textContent=bmi.toFixed(1);
   let cat,pct;
   if(bmi<18.5){cat='Undervekt';pct=Math.max(2,bmi/18.5*25);}else if(bmi<25){cat='Normalvekt';pct=25+(bmi-18.5)/6.5*30;}else if(bmi<30){cat='Overvekt';pct=55+(bmi-25)/5*25;}else{cat='Fedme';pct=Math.min(98,80+(bmi-30)/10*18);}
-  document.getElementById('bmi-category').textContent=cat;
-  const marker=document.getElementById('bmi-marker');marker.style.display='block';marker.style.left=pct+'%';
+  document.getElementById('bmi-category').textContent=cat;const marker=document.getElementById('bmi-marker');marker.style.display='block';marker.style.left=pct+'%';
 }
 function loadSettings(){const s=getSettings();if(s.height)document.getElementById('s-height').value=s.height;if(s.weight)document.getElementById('s-weight').value=s.weight;if(s.brBaseline)document.getElementById('s-br-baseline').value=s.brBaseline;updateBMI();}
 function saveSettings(){
@@ -702,38 +650,16 @@ function saveSettings(){
 }
 function clearAll(){if(!confirm('Slette all historikk? Dette kan ikke angres.'))return;const d=getData();d.history=[];setData(d);renderHistory();}
 
-function previewStrength(day){
-  const prog=STRENGTH[day];
-  const ex=prog.green;
-  const el=document.getElementById('strength-preview');
-  el.innerHTML=`
-    <div class="strength-block">
-      <div class="strength-header">
-        <span class="strength-title">${prog.label}</span>
-        <span class="strength-tag">Fullt program</span>
-      </div>
-      ${ex.map(e=>`
-        <div class="exercise-row">
-          <div>
-            <div class="exercise-name">${e.name}</div>
-            ${e.note?`<div class="exercise-note">${e.note}</div>`:''}
-          </div>
-          <div class="exercise-sets">${e.sets}</div>
-        </div>`).join('')}
-    </div>`;
-}
-
 function showTab(t){
   ['log','activity','history','trend','week','settings'].forEach(id=>document.getElementById('tab-'+id).style.display=id===t?'block':'none');
   document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('active',['log','activity','history','trend','week','settings'][i]===t));
-  if(t==='history')renderHistory();
-  if(t==='week')renderWeek();
-  if(t==='trend')renderTrend();
-  if(t==='settings')loadSettings();
+  if(t==='history')renderHistory();if(t==='week')renderWeek();if(t==='trend')renderTrend();if(t==='settings')loadSettings();
 }
 
+// ---- INIT ----
 migrateOldData();
 renderWeek();
+window.addEventListener('load',()=>setTimeout(initGoogle,1000));
 </script>
 </body>
 </html>
