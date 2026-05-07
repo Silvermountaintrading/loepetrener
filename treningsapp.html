@@ -342,21 +342,25 @@ function initGoogle(){
     client_id:CLIENT_ID,
     scope:SCOPES,
     callback:(resp)=>{
-      if(resp.error)return;
+      if(resp.error){console.error('Token error:',resp);accessToken=null;updateSyncUI(false);return;}
       accessToken=resp.access_token;
-      localStorage.setItem('gd_token',accessToken);
+      localStorage.setItem('gd_token_time',Date.now().toString());
       updateSyncUI(true);
-      syncFromDrive();
+      syncFromDrive().then(()=>syncToDrive());
     }
   });
-  const saved=localStorage.getItem('gd_token');
-  if(saved){accessToken=saved;updateSyncUI(true);syncFromDrive();}
+  // Request fresh token silently on load
+  setTimeout(()=>{if(tokenClient)tokenClient.requestAccessToken({prompt:'none'});},1500);
 }
 
 function handleSyncClick(){
-  if(accessToken){syncToDrive();return;}
-  if(tokenClient)tokenClient.requestAccessToken();
+  if(tokenClient)tokenClient.requestAccessToken({prompt:'consent'});
   else alert('Google-innlogging ikke klar ennå. Prøv igjen om et øyeblikk.');
+}
+
+function refreshTokenIfNeeded(){
+  const savedTime=parseInt(localStorage.getItem('gd_token_time')||'0');
+  if(Date.now()-savedTime>45*60*1000&&tokenClient)tokenClient.requestAccessToken({prompt:''});
 }
 
 function updateSyncUI(connected){
@@ -663,4 +667,3 @@ window.addEventListener('load',()=>setTimeout(initGoogle,1000));
 </script>
 </body>
 </html>
-
